@@ -15,14 +15,11 @@ import java.util.*
 class MainActivity : AppCompatActivity() {
 
     private val PERMISSIONS_REQUEST_CODE = 100
-
     private var cursor: Cursor? = null
 
     private var mTimer: Timer? = null
-
     // タイマー用の時間のための変数
     private var mTimerSec = 0.0
-
     private var mHandler = Handler()
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -59,15 +56,16 @@ class MainActivity : AppCompatActivity() {
             getContentsInfo()
         }
 
+        // 「進む」ボタンをタップ
         fowardButton.setOnClickListener {
 
-            DoFoward(cursor)
+            DoFoward(cursor)                // 進む動作を関数にした
          //   cursor.close()
 
         }
 
+        // 「戻る」ボタンをタップ
         backButton.setOnClickListener {
-
 
             if(cursor.moveToPrevious()) {
                 //   cursor.moveToFirst()
@@ -89,11 +87,40 @@ class MainActivity : AppCompatActivity() {
 
         }
 
+        // 「停止/再生」ボタンをタップ
         PlayStopButton.setOnClickListener {
-            DoFoward(cursor)
+
+            if(PlayStopButton.text != "停止") {       // 「停止」でなければ再生する
+                PlayStopButton.text = "停止"          // ボタン無効、「再生」にする
+                fowardButton.text = "×進む"
+                backButton.text = "×戻る"
+                fowardButton.isClickable = false
+                backButton.isClickable = false
+                mTimer = Timer()
+                mTimer!!.schedule(object : TimerTask() {
+                    override fun run() {
+                        mTimerSec += 2
+                        mHandler.post {
+                            DoFoward(cursor)        //  「進む」を実行する
+                        }
+                    }
+                }, 2000, 2000)
+            }
+            else {      // タイマー止める、ボタン有効、「再生」にする
+                if (mTimer != null) {
+                    mTimer!!.cancel()
+                    mTimer = null
+                }
+                PlayStopButton.text = "再生"
+                fowardButton.text = "進む"
+                backButton.text = "戻る"
+                fowardButton.isClickable = true
+                backButton.isClickable = true
+            }
         }
     }
 
+    // 「進む」の中身をここで実行する
 private fun DoFoward(cursor: Cursor) {
     if (cursor.moveToNext()) {
         //   cursor.moveToFirst()
