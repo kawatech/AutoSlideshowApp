@@ -28,22 +28,20 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
 
 
-
-
-
         // Android 6.0以降の場合
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             // パーミッションの許可状態を確認する
             if (checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED) {
 
-
                     // 許可されている
-             //   getContentsInfo()
+                getContentsInfo()
 
 
             } else {
                 // 許可されていないので許可ダイアログを表示する
+
                 requestPermissions(arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE), PERMISSIONS_REQUEST_CODE)
+
 
 
 
@@ -53,21 +51,7 @@ class MainActivity : AppCompatActivity() {
         } else {
           //  getContentsInfo()
 
-
         }
-
-
-   //     if (checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED) {
-            val resolver = contentResolver
-            val cursor = resolver.query(
-                MediaStore.Images.Media.EXTERNAL_CONTENT_URI, // データの種類
-                null, // 項目(null = 全項目)
-                null, // フィルタ条件(null = フィルタなし)
-                null, // フィルタ用パラメータ
-                null // ソート (null ソートなし)
-            )
-
-    //    }
 
 
 
@@ -75,10 +59,7 @@ class MainActivity : AppCompatActivity() {
         // 「進む」ボタンをタップ
         fowardButton.setOnClickListener {
 
-
-            DoFoward(cursor)                // 進む動作を関数にした
-         //   cursor.close()
-
+            DoFoward()                // 進む動作を関数にした
         }
 
         // 「戻る」ボタンをタップ
@@ -87,16 +68,18 @@ class MainActivity : AppCompatActivity() {
             if(cursor!!.moveToPrevious()) {
 
 
-                val fieldIndex = cursor.getColumnIndex(MediaStore.Images.Media._ID)
-                val id = cursor.getLong(fieldIndex)
+                val fieldIndex = cursor!!.getColumnIndex(MediaStore.Images.Media._ID)
+                val id = cursor!!.getLong(fieldIndex)
                 val imageUri =
                     ContentUris.withAppendedId(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, id)
+
+
                 imageView.setImageURI(imageUri)
             }
             else {
-                cursor.moveToLast()
-                val fieldIndex = cursor.getColumnIndex(MediaStore.Images.Media._ID)
-                val id = cursor.getLong(fieldIndex)
+                cursor!!.moveToLast()
+                val fieldIndex = cursor!!.getColumnIndex(MediaStore.Images.Media._ID)
+                val id = cursor!!.getLong(fieldIndex)
                 val imageUri =
                     ContentUris.withAppendedId(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, id)
                 imageView.setImageURI(imageUri)
@@ -108,20 +91,18 @@ class MainActivity : AppCompatActivity() {
         // 「停止/再生」ボタンをタップ
         PlayStopButton.setOnClickListener {
 
-
-
             if(PlayStopButton.text != "停止") {       // 「停止」でなければ再生する
                 PlayStopButton.text = "停止"          // ボタン無効、「再生」にする
                 fowardButton.text = "×進む"
                 backButton.text = "×戻る"
-                fowardButton.isClickable = false
-                backButton.isClickable = false
+                fowardButton.isEnabled = false
+                backButton.isEnabled = false
                 mTimer = Timer()
                 mTimer!!.schedule(object : TimerTask() {
                     override fun run() {
                         mTimerSec += 2
                         mHandler.post {
-                            DoFoward(cursor)        //  「進む」を実行する
+                            DoFoward()        //  「進む」を実行する
                         }
                     }
                 }, 2000, 2000)
@@ -134,25 +115,25 @@ class MainActivity : AppCompatActivity() {
                 PlayStopButton.text = "再生"
                 fowardButton.text = "進む"
                 backButton.text = "戻る"
-                fowardButton.isClickable = true
-                backButton.isClickable = true
+                fowardButton.isEnabled = true
+                backButton.isEnabled = true
             }
         }
     }
 
     // 「進む」の中身をここで実行する
-    private fun DoFoward(cursor: Cursor) {
-        if (cursor.moveToNext()) {
+    private fun DoFoward() {
+        if (cursor!!.moveToNext()) {
         //   cursor.moveToFirst()
-            val fieldIndex = cursor.getColumnIndex(MediaStore.Images.Media._ID)
-            val id = cursor.getLong(fieldIndex)
+            val fieldIndex = cursor!!.getColumnIndex(MediaStore.Images.Media._ID)
+            val id = cursor!!.getLong(fieldIndex)
             val imageUri =
                 ContentUris.withAppendedId(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, id)
             imageView.setImageURI(imageUri)
         } else {
-            cursor.moveToFirst()
-            val fieldIndex = cursor.getColumnIndex(MediaStore.Images.Media._ID)
-            val id = cursor.getLong(fieldIndex)
+            cursor!!.moveToFirst()
+            val fieldIndex = cursor!!.getColumnIndex(MediaStore.Images.Media._ID)
+            val id = cursor!!.getLong(fieldIndex)
             val imageUri =
                 ContentUris.withAppendedId(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, id)
             imageView.setImageURI(imageUri)
@@ -166,6 +147,13 @@ class MainActivity : AppCompatActivity() {
             PERMISSIONS_REQUEST_CODE ->
                 if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                     getContentsInfo()
+                }else {
+                    PlayStopButton.isEnabled = false
+                    fowardButton.isEnabled = false
+                    backButton.isEnabled = false
+                    PlayStopButton.text = "×再生/停止"          // ボタン無効
+                    fowardButton.text = "×進む"
+                    backButton.text = "×戻る"
                 }
         }
     }
@@ -173,7 +161,7 @@ class MainActivity : AppCompatActivity() {
     private fun getContentsInfo() {
         // 画像の情報を取得する
         val resolver = contentResolver
-        val cursor = resolver.query(
+         cursor = resolver.query(
             MediaStore.Images.Media.EXTERNAL_CONTENT_URI, // データの種類
             null, // 項目(null = 全項目)
             null, // フィルタ条件(null = フィルタなし)
@@ -183,12 +171,12 @@ class MainActivity : AppCompatActivity() {
 
         if (cursor!!.moveToFirst()) {
             // indexからIDを取得し、そのIDから画像のURIを取得する
-            val fieldIndex = cursor.getColumnIndex(MediaStore.Images.Media._ID)
-            val id = cursor.getLong(fieldIndex)
+            val fieldIndex = cursor!!.getColumnIndex(MediaStore.Images.Media._ID)
+            val id = cursor!!.getLong(fieldIndex)
             val imageUri = ContentUris.withAppendedId(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, id)
 
             imageView.setImageURI(imageUri)
         }
-        cursor.close()
+     //   cursor.close()
     }
 }
